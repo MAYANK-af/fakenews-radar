@@ -7,6 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Firebase compatibility SDK v10 -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
@@ -279,6 +283,17 @@
                     <button class="hidden sm:flex items-center gap-2 bg-radar-green/10 border border-radar-green/30 text-radar-green px-4 py-2 rounded-lg text-sm font-medium hover:bg-radar-green/20 transition-all btn-ripple">
                         <i data-lucide="bookmark" class="w-4 h-4"></i> Saved
                     </button>
+                    
+                    <button id="authBtn" onclick="openAuthModal()" class="flex items-center gap-2 bg-radar-blue/15 border border-radar-blue/30 text-radar-blue px-4 py-2 rounded-lg text-sm font-medium hover:bg-radar-blue/25 transition-all btn-ripple shadow-lg shadow-radar-blue/5">
+                        <i data-lucide="user" class="w-4 h-4"></i> Sign In
+                    </button>
+                    <div id="userProfile" class="hidden flex items-center gap-2.5 bg-gray-900/60 border border-gray-800 px-3 py-1.5 rounded-full">
+                        <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-radar-green to-radar-blue flex items-center justify-center text-[10px] font-black text-gray-950 border border-radar-green/30 animate-pulse-ring" id="userAvatar">U</div>
+                        <span class="text-xs font-semibold text-gray-300 hidden md:inline truncate max-w-[80px]" id="userDisplayName">User</span>
+                        <button onclick="handleSignOut()" class="text-gray-500 hover:text-radar-red transition-colors pl-1.5 border-l border-gray-800" title="Sign Out">
+                            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -306,6 +321,21 @@
                 <a href="#tips" onclick="toggleMobileMenu()" class="flex items-center gap-3 text-gray-300 hover:text-radar-green transition-colors p-3 rounded-lg hover:bg-white/5">
                     <i data-lucide="lightbulb" class="w-5 h-5"></i> Tips
                 </a>
+                
+                <div class="border-t border-gray-800/80 my-4 pt-4">
+                    <button id="mobileAuthBtn" onclick="toggleMobileMenu(); openAuthModal();" class="w-full flex items-center justify-center gap-2.5 bg-radar-blue/15 border border-radar-blue/30 text-radar-blue p-3 rounded-lg text-sm font-medium hover:bg-radar-blue/25 transition-all">
+                        <i data-lucide="user" class="w-5 h-5"></i> Sign In
+                    </button>
+                    <div id="mobileUserProfile" class="hidden flex items-center justify-between bg-gray-900/60 border border-gray-800 p-3 rounded-lg">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-radar-green to-radar-blue flex items-center justify-center text-xs font-black text-gray-950 border border-radar-green/30" id="mobileUserAvatar">U</div>
+                            <span class="text-xs font-semibold text-gray-300 truncate max-w-[120px]" id="mobileUserDisplayName">User</span>
+                        </div>
+                        <button onclick="toggleMobileMenu(); handleSignOut();" class="text-gray-500 hover:text-radar-red transition-colors p-1" title="Sign Out">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -427,6 +457,70 @@
                 <button onclick="closeResult()" class="bg-gray-700 hover:bg-gray-600 text-white text-sm px-4 py-2 rounded-lg transition-colors">
                     Close Report
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Modal (Sign In / Sign Up) -->
+    <div id="authModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute inset-0 bg-black/75 backdrop-blur-md" onclick="closeAuthModal()"></div>
+        <div class="modal-content absolute inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl shadow-black/80 flex flex-col p-6 overflow-hidden">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-gray-800/80 mb-5">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-radar-blue/10 flex items-center justify-center">
+                        <i data-lucide="shield-alert" class="w-5 h-5 text-radar-blue"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base" id="authModalTitle">Welcome Back</h3>
+                        <p class="text-xs text-gray-500" id="authModalSubtitle">Sign in to sync your scan history to the cloud</p>
+                    </div>
+                </div>
+                <button onclick="closeAuthModal()" class="text-gray-500 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <!-- Auth Form -->
+            <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <!-- Display Name Field (Hidden on Login) -->
+                <div id="displayNameGroup" class="hidden">
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Display Name</label>
+                    <div class="relative">
+                        <input type="text" id="authDisplayName" placeholder="e.g. John Doe" class="w-full bg-gray-950 border border-gray-800 focus:border-radar-blue rounded-xl p-3 text-sm text-white placeholder-gray-600 outline-none transition-all pl-10" />
+                        <i data-lucide="user" class="absolute left-3.5 top-3.5 w-4 h-4 text-gray-600"></i>
+                    </div>
+                </div>
+
+                <!-- Email Field -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Email Address</label>
+                    <div class="relative">
+                        <input type="email" id="authEmail" required placeholder="you@example.com" class="w-full bg-gray-950 border border-gray-800 focus:border-radar-blue rounded-xl p-3 text-sm text-white placeholder-gray-600 outline-none transition-all pl-10" />
+                        <i data-lucide="mail" class="absolute left-3.5 top-3.5 w-4 h-4 text-gray-600"></i>
+                    </div>
+                </div>
+
+                <!-- Password Field -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Password</label>
+                    <div class="relative">
+                        <input type="password" id="authPassword" required placeholder="••••••••" class="w-full bg-gray-950 border border-gray-800 focus:border-radar-blue rounded-xl p-3 text-sm text-white placeholder-gray-600 outline-none transition-all pl-10" minlength="6" />
+                        <i data-lucide="lock" class="absolute left-3.5 top-3.5 w-4 h-4 text-gray-600"></i>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="authSubmitBtn" class="w-full py-3 bg-gradient-to-r from-radar-blue to-radar-green hover:brightness-110 active:scale-[0.98] text-gray-900 font-bold text-sm rounded-xl transition-all shadow-lg shadow-radar-blue/10 flex items-center justify-center gap-2">
+                    <span id="authSubmitText">Sign In</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </form>
+            
+            <!-- Auth Footer / Switch Mode -->
+            <div class="text-center mt-5 pt-4 border-t border-gray-800/80 text-xs text-gray-500">
+                <span id="authSwitchPrompt">Don't have an account?</span>
+                <button onclick="toggleAuthMode()" class="text-radar-blue hover:text-radar-green transition-colors font-semibold ml-1 outline-none" id="authSwitchBtn">Sign Up</button>
             </div>
         </div>
     </div>

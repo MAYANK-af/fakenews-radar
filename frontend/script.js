@@ -10,6 +10,12 @@ let scanHistory = JSON.parse(localStorage.getItem('fnr_history') || '[]');
 let currentInputTab = 'text';
 let radarAnimationId = null;
 
+// ============ FIREBASE CLOUD SYSTEM STATE ============
+let firebaseEnabled = false;
+let authMode = 'login'; // 'login' or 'signup'
+let db = null;
+let auth = null;
+
 // ============ EXAMPLES DATA ============
 const examples = [
     "BREAKING: Government officials confirm that COVID-19 vaccines contain microscopic tracking chips that allow the NSA to monitor citizens' movements in real-time. Multiple whistleblowers have come forward with evidence of this secret program.",
@@ -48,6 +54,185 @@ const tips = [
     { icon: "zap", title: "Emotional Language", description: "Fake news uses emotional and sensational language to provoke reactions. Real news sticks to facts and neutral reporting.", color: "yellow" },
     { icon: "link", title: "Check URLs Carefully", description: "Fake sites mimic real ones with slight URL changes. Look for .co, .su, or unusual domain extensions pretending to be real news.", color: "red" }
 ];
+
+// ============ FIREBASE CORE & AUTHENTICATION ============
+async function initFirebaseCloud() {
+    try {
+        const apiHost = window.location.port === '3001' ? 'http://127.0.0.1:8080' : '';
+        const response = await fetch(`${apiHost}/firebase-config`);
+        if (!response.ok) throw new Error("Could not fetch config");
+        
+        const config = await response.json();
+        if (config.enabled) {
+            firebase.initializeApp({
+                apiKey: config.apiKey,
+                authDomain: config.authDomain,
+                projectId: config.projectId,
+                storageBucket: config.storageBucket,
+                messagingSenderId: config.messagingSenderId,
+                appId: config.appId
+            });
+            db = firebase.firestore();
+            auth = firebase.auth();
+            firebaseEnabled = true;
+            console.log("Firebase initialized successfully");
+            
+            // Listen to auth state changes
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    // Logged In
+                    document.getElementById('authBtn')?.classList.add('hidden');
+                    document.getElementById('mobileAuthBtn')?.classList.add('hidden');
+                    
+                    const userProfile = document.getElementById('userProfile');
+                    const mobileUserProfile = document.getElementById('mobileUserProfile');
+                    if (userProfile) userProfile.classList.remove('hidden');
+                    if (mobileUserProfile) mobileUserProfile.classList.remove('hidden');
+                    
+                    const name = user.displayName || user.email.split('@')[0];
+                    const letter = name.charAt(0).toUpperCase();
+                    
+                    const avatar = document.getElementById('userAvatar');
+                    const mobileAvatar = document.getElementById('mobileUserAvatar');
+                    if (avatar) avatar.textContent = letter;
+                    if (mobileAvatar) mobileAvatar.textContent = letter;
+                    
+                    const disp = document.getElementById('userDisplayName');
+                    const mobileDisp = document.getElementById('mobileUserDisplayName');
+                    if (disp) disp.textContent = name;
+                    if (mobileDisp) mobileDisp.textContent = name;
+                    
+                    // Pull Cloud Scans History
+                    db.collection('users')
+                      .doc(user.uid)
+                      .collection('scans')
+                      .orderBy('timestamp', 'desc')
+                      .limit(50)
+                      .onSnapshot((qs) => {
+                          const cloudHistory = [];
+                          qs.forEach(doc => {
+                              const item = doc.data();
+                              item.id = doc.id; // Save Firestore Doc ID
+                              cloudHistory.push(item);
+                          });
+                          scanHistory = cloudHistory;
+                          renderHistory();
+                      }, (err) => {
+                          console.error("Firestore loading error:", err);
+                      });
+                      
+                } else {
+                    // Logged Out
+                    document.getElementById('authBtn')?.classList.remove('hidden');
+                    document.getElementById('mobileAuthBtn')?.classList.remove('hidden');
+                    document.getElementById('userProfile')?.classList.add('hidden');
+                    document.getElementById('mobileUserProfile')?.classList.add('hidden');
+                    
+                    scanHistory = JSON.parse(localStorage.getItem('fnr_history') || '[]');
+                    renderHistory();
+                }
+            });
+            
+        } else {
+            console.log("Firebase not configured. Running in Guest Mode (LocalStorage)");
+        }
+    } catch (e) {
+        console.warn("Firebase startup warning:", e);
+    }
+}
+
+// Open Auth Modal
+window.openAuthModal = function() {
+    const modal = document.getElementById('authModal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+// Close Auth Modal
+window.closeAuthModal = function() {
+    const modal = document.getElementById('authModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+// Toggle Auth Mode
+window.toggleAuthMode = function() {
+    const title = document.getElementById('authModalTitle');
+    const subtitle = document.getElementById('authModalSubtitle');
+    const nameGroup = document.getElementById('displayNameGroup');
+    const submitText = document.getElementById('authSubmitText');
+    const switchPrompt = document.getElementById('authSwitchPrompt');
+    const switchBtn = document.getElementById('authSwitchBtn');
+    
+    if (authMode === 'login') {
+        authMode = 'signup';
+        if (title) title.textContent = "Create Account";
+        if (subtitle) subtitle.textContent = "Start syncing your fact-checks in the cloud";
+        if (nameGroup) nameGroup.classList.remove('hidden');
+        if (submitText) submitText.textContent = "Create Account";
+        if (switchPrompt) switchPrompt.textContent = "Already have an account?";
+        if (switchBtn) switchBtn.textContent = "Sign In";
+    } else {
+        authMode = 'login';
+        if (title) title.textContent = "Welcome Back";
+        if (subtitle) subtitle.textContent = "Sign in to sync your scan history to the cloud";
+        if (nameGroup) nameGroup.classList.add('hidden');
+        if (submitText) submitText.textContent = "Sign In";
+        if (switchPrompt) switchPrompt.textContent = "Don't have an account?";
+        if (switchBtn) switchBtn.textContent = "Sign Up";
+    }
+}
+
+// Submit Login/Signup Form
+window.handleAuthSubmit = async function(event) {
+    event.preventDefault();
+    if (!firebaseEnabled) {
+        showToast("Authentication is running in Guest Mode", "info");
+        closeAuthModal();
+        return;
+    }
+    
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    const displayName = document.getElementById('authDisplayName').value;
+    const btn = document.getElementById('authSubmitBtn');
+    
+    if (btn) btn.disabled = true;
+    showToast("Authenticating secure profile...", "info");
+    
+    try {
+        if (authMode === 'signup') {
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            if (displayName.trim()) {
+                await userCredential.user.updateProfile({
+                    displayName: displayName
+                });
+            }
+            showToast("Secure cloud profile created successfully!", "success");
+        } else {
+            await auth.signInWithEmailAndPassword(email, password);
+            showToast("Logged in successfully!", "success");
+        }
+        closeAuthModal();
+        // Clear fields
+        document.getElementById('authEmail').value = '';
+        document.getElementById('authPassword').value = '';
+        document.getElementById('authDisplayName').value = '';
+    } catch (err) {
+        showToast(err.message, "error");
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+// Log Out User
+window.handleSignOut = async function() {
+    if (!firebaseEnabled) return;
+    try {
+        await auth.signOut();
+        showToast("Signed out successfully!", "info");
+    } catch (err) {
+        showToast("Signout error occurred", "error");
+    }
+}
 
 // ============ RADAR ANIMATION ============
 function initRadar() {
@@ -752,11 +937,18 @@ function saveScanToHistory(text, score, verdict) {
         timestamp: Date.now()
     };
 
-    scanHistory.unshift(item);
-    if (scanHistory.length > 50) scanHistory.pop();
-
-    localStorage.setItem('fnr_history', JSON.stringify(scanHistory));
-    renderHistory();
+    if (firebaseEnabled && auth.currentUser) {
+        db.collection('users')
+          .doc(auth.currentUser.uid)
+          .collection('scans')
+          .add(item)
+          .catch(err => console.error("Error writing scan to cloud:", err));
+    } else {
+        scanHistory.unshift(item);
+        if (scanHistory.length > 50) scanHistory.pop();
+        localStorage.setItem('fnr_history', JSON.stringify(scanHistory));
+        renderHistory();
+    }
 
     // Dynamically prepend the new user analysis to the live dashboard list
     const newRecent = {
@@ -833,10 +1025,23 @@ window.reopenReport = function(timestamp) {
 
 window.deleteHistoryItem = function(event, timestamp) {
     event.stopPropagation();
-    scanHistory = scanHistory.filter(h => h.timestamp !== timestamp);
-    localStorage.setItem('fnr_history', JSON.stringify(scanHistory));
-    renderHistory();
-    showToast("Report deleted", "info");
+    if (firebaseEnabled && auth.currentUser) {
+        db.collection('users')
+          .doc(auth.currentUser.uid)
+          .collection('scans')
+          .where('timestamp', '==', timestamp)
+          .get()
+          .then(qs => {
+              qs.forEach(doc => doc.ref.delete());
+              showToast("Report deleted", "info");
+          })
+          .catch(err => console.error("Error deleting from cloud:", err));
+    } else {
+        scanHistory = scanHistory.filter(h => h.timestamp !== timestamp);
+        localStorage.setItem('fnr_history', JSON.stringify(scanHistory));
+        renderHistory();
+        showToast("Report deleted", "info");
+    }
 }
 
 window.filterHistory = function() {
@@ -845,10 +1050,26 @@ window.filterHistory = function() {
 
 window.clearHistory = function() {
     if (confirm("Are you sure you want to clear your entire scan history? This cannot be undone.")) {
-        scanHistory = [];
-        localStorage.removeItem('fnr_history');
-        renderHistory();
-        showToast("Scan history cleared", "info");
+        if (firebaseEnabled && auth.currentUser) {
+            db.collection('users')
+              .doc(auth.currentUser.uid)
+              .collection('scans')
+              .get()
+              .then(qs => {
+                  const batch = db.batch();
+                  qs.forEach(doc => batch.delete(doc.ref));
+                  return batch.commit();
+              })
+              .then(() => {
+                  showToast("Scan history cleared", "info");
+              })
+              .catch(err => console.error("Error clearing cloud history:", err));
+        } else {
+            scanHistory = [];
+            localStorage.removeItem('fnr_history');
+            renderHistory();
+            showToast("Scan history cleared", "info");
+        }
     }
 }
 
@@ -909,5 +1130,5 @@ document.addEventListener('DOMContentLoaded', () => {
     populateRecentAnalyses();
     populateTrendingTopics();
     populateTips();
-    renderHistory();
+    initFirebaseCloud();
 });

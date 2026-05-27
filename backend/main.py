@@ -24,6 +24,22 @@ def classify(req: ArticleRequest):
     result = classify_text(req.text)
     return result
 
+@app.get("/firebase-config")
+def firebase_config():
+    api_key = os.environ.get("FIREBASE_API_KEY")
+    project_id = os.environ.get("FIREBASE_PROJECT_ID")
+    if not api_key or not project_id:
+        return {"enabled": False}
+    return {
+        "enabled": True,
+        "apiKey": api_key,
+        "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN"),
+        "projectId": project_id,
+        "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET"),
+        "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID"),
+        "appId": os.environ.get("FIREBASE_APP_ID")
+    }
+
 # Serve static frontend files at the root of the app
 # Ensure this is mounted AFTER the classify route!
 static_dir = os.path.join(os.path.dirname(__file__), "static")
