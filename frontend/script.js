@@ -568,7 +568,7 @@ function displayReport(data, originalText) {
         explanation = "Critical alert! Multiple highly sensational linguistic tags detected. Phrasing aims to provoke a strong emotional response rather than present neutral facts. Highly indicative of structured disinformation.";
     }
 
-    const customChartValues = [
+    const customChartValues = data.analytics?.radar_values || [
         (credibilityPct / 100) * 0.9 + 0.1,
         (credibilityPct / 100) * 0.8 + 0.1,
         1 - ((data.credibility_signals?.negative_markers || 0) * 0.1),
@@ -610,6 +610,82 @@ function displayReport(data, originalText) {
             </div>
         </div>
 
+        <!-- Sleek Linguistic Analytics Breakdown -->
+        <div class="bg-gray-900/30 border border-gray-800 rounded-xl p-5 mb-6">
+            <div class="flex items-center justify-between mb-4 border-b border-gray-800/50 pb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-radar-blue"></i>
+                    <h5 class="text-xs font-bold uppercase tracking-wider text-gray-300">Linguistic Analytics Breakdown</h5>
+                </div>
+                ${data.analytics?.source_bias_label ? `
+                <span class="bg-blue-500/10 border border-blue-500/25 text-radar-blue text-[10px] px-2.5 py-0.5 rounded-full font-medium">
+                    Bias: ${data.analytics.source_bias_label}
+                </span>` : ''}
+            </div>
+            
+            <div class="grid sm:grid-cols-2 gap-x-6 gap-y-4">
+                <!-- 1. Writing Tone -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1.5">
+                        <span class="text-gray-400">Writing Tone</span>
+                        <span class="font-mono text-gray-200 font-bold">${data.analytics ? Math.round(100 - data.analytics.bias_score) : 25}% Subjective</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-950 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-radar-blue to-radar-green transition-all duration-1000 ease-out" style="width: 0%" data-width="${data.analytics ? Math.round(100 - data.analytics.bias_score) : 25}%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                        <span>Objective</span>
+                        <span>Sensationalist</span>
+                    </div>
+                </div>
+
+                <!-- 2. Citation Density -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1.5">
+                        <span class="text-gray-400">Citation Density</span>
+                        <span class="font-mono text-gray-200 font-bold">${data.analytics ? Math.round(data.analytics.citation_density) : 30}%</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-950 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-gray-700 to-radar-green transition-all duration-1000 ease-out" style="width: 0%" data-width="${data.analytics ? Math.round(data.analytics.citation_density) : 30}%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                        <span>Low Reference</span>
+                        <span>Highly Sourced</span>
+                    </div>
+                </div>
+
+                <!-- 3. Clickbait Likelihood -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1.5">
+                        <span class="text-gray-400">Clickbait Likelihood</span>
+                        <span class="font-mono text-gray-200 font-bold">${data.analytics ? Math.round(data.analytics.clickbait_score) : 10}%</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-950 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-radar-green via-radar-yellow to-radar-red transition-all duration-1000 ease-out" style="width: 0%" data-width="${data.analytics ? Math.round(data.analytics.clickbait_score) : 10}%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                        <span>Standard News</span>
+                        <span>Highly Sensational</span>
+                    </div>
+                </div>
+
+                <!-- 4. Source Trust -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1.5">
+                        <span class="text-gray-400">Source Credibility</span>
+                        <span class="font-mono text-gray-200 font-bold">${data.analytics ? Math.round(data.analytics.source_trust) : 75}%</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-950 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-radar-red via-radar-yellow to-radar-green transition-all duration-1000 ease-out" style="width: 0%" data-width="${data.analytics ? Math.round(data.analytics.source_trust) : 75}%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                        <span>Unverified</span>
+                        <span>High Authority</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="grid sm:grid-cols-2 gap-4 mb-6">
             <div class="bg-gray-900/30 border border-green-500/10 rounded-xl p-4">
                 <div class="flex items-center gap-2 text-radar-green mb-3">
@@ -645,6 +721,11 @@ function displayReport(data, originalText) {
 
     setTimeout(() => {
         initCredibilityChart(customChartValues);
+        // Animate the progress bars dynamically
+        const progressBars = content.querySelectorAll('[data-width]');
+        progressBars.forEach(bar => {
+            bar.style.width = bar.getAttribute('data-width');
+        });
     }, 200);
 
     saveScanToHistory(originalText, credibilityPct, verdictLabel.toLowerCase());
