@@ -481,6 +481,15 @@
                 </button>
             </div>
             
+            <!-- Guest Mode Warning Banner -->
+            <div id="authGuestWarning" class="hidden bg-blue-500/10 border border-blue-500/25 rounded-xl p-3.5 mb-4 text-xs text-radar-blue flex items-start gap-2.5">
+                <i data-lucide="info" class="w-4 h-4 mt-0.5 shrink-0 text-radar-blue"></i>
+                <div>
+                    <strong class="font-bold block mb-0.5">Guest Mode Active</strong>
+                    To enable cloud syncing, add your Firebase keys as Hugging Face secrets. Bookmarks will save locally instead.
+                </div>
+            </div>
+
             <!-- Auth Form -->
             <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
                 <!-- Display Name Field (Hidden on Login) -->

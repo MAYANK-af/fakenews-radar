@@ -144,7 +144,29 @@ async function initFirebaseCloud() {
 // Open Auth Modal
 window.openAuthModal = function() {
     const modal = document.getElementById('authModal');
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        modal.classList.remove('hidden');
+        
+        // Show/hide guest mode warning and toggle submit button states
+        const warning = document.getElementById('authGuestWarning');
+        const submitBtn = document.getElementById('authSubmitBtn');
+        if (warning) {
+            if (!firebaseEnabled) {
+                warning.classList.remove('hidden');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            } else {
+                warning.classList.add('hidden');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        }
+        lucide.createIcons();
+    }
 }
 
 // Close Auth Modal
