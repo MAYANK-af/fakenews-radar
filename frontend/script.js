@@ -29,11 +29,11 @@ const trendingTopics = [
 
 // ============ RECENT ANALYSES DATA ============
 const recentAnalyses = [
-    { title: "Vitamin D cures COVID-19 definitively", score: 12, verdict: "fake", time: "3 min ago" },
-    { title: "New renewable energy record set in Europe", score: 89, verdict: "credible", time: "8 min ago" },
-    { title: "Celebrity death hoax spreads on social media", score: 23, verdict: "fake", time: "15 min ago" },
-    { title: "GDP growth exceeds expectations this quarter", score: 76, verdict: "credible", time: "22 min ago" },
-    { title: "Secret government weather control program", score: 8, verdict: "fake", time: "31 min ago" }
+    { title: "AI-generated deepfake video of election candidate goes viral", score: 14, verdict: "fake", time: "2 min ago" },
+    { title: "Commercial nuclear fusion reactor achieves net energy gain", score: 93, verdict: "credible", time: "7 min ago" },
+    { title: "Large-scale phishing campaign targets DeFi smart contracts", score: 18, verdict: "fake", time: "15 min ago" },
+    { title: "Global carbon emissions plateau in latest atmospheric report", score: 81, verdict: "credible", time: "25 min ago" },
+    { title: "Fabricated leaks claim NASA discovered alien base on Moon", score: 5, verdict: "fake", time: "40 min ago" }
 ];
 
 // ============ TIPS DATA ============
@@ -645,6 +645,17 @@ function saveScanToHistory(text, score, verdict) {
 
     localStorage.setItem('fnr_history', JSON.stringify(scanHistory));
     renderHistory();
+
+    // Dynamically prepend the new user analysis to the live dashboard list
+    const newRecent = {
+        title: title,
+        score: score,
+        verdict: item.verdict,
+        time: "Just now"
+    };
+    recentAnalyses.unshift(newRecent);
+    if (recentAnalyses.length > 5) recentAnalyses.pop();
+    populateRecentAnalyses();
 }
 
 function renderHistory() {
