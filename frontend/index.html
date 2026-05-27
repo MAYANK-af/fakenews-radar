@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Radar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        :root {
+            --radar-green: #00ff88;
+            --radar-blue: #00d4ff;
+            --radar-red: #ff3366;
+            --radar-yellow: #ffcc00;
+            --radar-orange: #ff8800;
+            --bg-dark: #0a0e1a;
+            --bg-card: #111827;
+            --bg-card-hover: #1a2332;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Radar Canvas */
+        #radarCanvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        /* Glow Effects */
+        .glow-green { text-shadow: 0 0 10px rgba(0,255,136,0.5), 0 0 40px rgba(0,255,136,0.2); }
+        .glow-blue { text-shadow: 0 0 10px rgba(0,212,255,0.5), 0 0 40px rgba(0,212,255,0.2); }
+        .glow-red { text-shadow: 0 0 10px rgba(255,51,102,0.5), 0 0 40px rgba(255,51,102,0.2); }
+
+        .box-glow-green { box-shadow: 0 0 15px rgba(0,255,136,0.15), 0 0 30px rgba(0,255,136,0.05); }
+        .box-glow-blue { box-shadow: 0 0 15px rgba(0,212,255,0.15), 0 0 30px rgba(0,212,255,0.05); }
+        .box-glow-red { box-shadow: 0 0 15px rgba(255,51,102,0.15), 0 0 30px rgba(255,51,102,0.05); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0e1a; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+        /* Animated Background Grid */
+        .bg-grid {
+            background-image: 
+                linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        /* Pulse Animation */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.2; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+        .animate-pulse-ring { animation: pulse-ring 3s ease-in-out infinite; }
+
+        @keyframes scan-line {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        .scan-line::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--radar-green), transparent);
+            animation: scan-line 3s linear infinite;
+            opacity: 0.3;
+        }
+
+        /* Score Circle */
+        .score-circle {
+            position: relative;
+            width: 140px;
+            height: 140px;
+        }
+        .score-circle svg {
+            transform: rotate(-90deg);
+        }
+        .score-circle .score-value {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Input Focus */
+        .input-radar:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0,255,136,0.3), 0 0 20px rgba(0,255,136,0.1);
+        }
+
+        /* Category Tags */
+        .tag-credible { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; }
+        .tag-suspicious { background: rgba(255,204,0,0.1); border: 1px solid rgba(255,204,0,0.3); color: #ffcc00; }
+        .tag-fake { background: rgba(255,51,102,0.1); border: 1px solid rgba(255,51,102,0.3); color: #ff3366; }
+        .tag-misleading { background: rgba(255,136,0,0.1); border: 1px solid rgba(255,136,0,0.3); color: #ff8800; }
+
+        /* Progress Bar Animation */
+        @keyframes fill-bar {
+            from { width: 0%; }
+        }
+        .animate-fill { animation: fill-bar 1.5s ease-out; }
+
+        /* Card Hover */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            background: var(--bg-card-hover);
+        }
+
+        /* Fade In */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        /* Typing Cursor */
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        .cursor-blink::after {
+            content: '|';
+            animation: blink 1s step-end infinite;
+            color: var(--radar-green);
+        }
+
+        /* Tooltip */
+        .tooltip-container { position: relative; }
+        .tooltip-container .tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+            z-index: 50;
+        }
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        /* Stat counter animation */
+        @keyframes countUp {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .nav-blur {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* Button Ripple */
+        .btn-ripple {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-ripple::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 10%, transparent 10%);
+            transform: scale(10);
+            opacity: 0;
+            transition: transform 0.5s, opacity 0.5s;
+        }
+        .btn-ripple:active::after {
+            transform: scale(0);
+            opacity: 1;
+            transition: 0s;
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        radar: {
+                            green: '#00ff88',
+                            blue: '#00d4ff',
+                            red: '#ff3366',
+                            yellow: '#ffcc00',
+                            orange: '#ff8800',
+                            dark: '#0a0e1a',
+                            card: '#111827',
+                            cardHover: '#1a2332',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-grid min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 nav-blur bg-radar-dark/80 border-b border-gray-800/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <i data-lucide="radar" class="w-8 h-8 text-radar-green"></i>
+                        <div class="absolute inset-0 animate-pulse-ring">
+                            <i data-lucide="radar" class="w-8 h-8 text-radar-green opacity-30"></i>
+                        </div>
+                    </div>
+                    <span class="text-xl font-bold tracking-tight">
+                        <span class="text-radar-green glow-green">FAKE</span><span class="text-gray-300"> NEWS</span><span class="text-radar-blue glow-blue"> RADAR</span>
+                    </span>
+                </div>
+                <div class="hidden md:flex items-center gap-6 text-sm">
+                    <a href="#scanner" class="text-gray-400 hover:text-radar-green transition-colors flex items-center gap-1.5">
+                        <i data-lucide="scan" class="w-4 h-4"></i> Scanner
+                    </a>
+                    <a href="#dashboard" class="text-gray-400 hover:text-radar-green transition-colors flex items-center gap-1.5">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+                    </a>
+                    <a href="#history" class="text-gray-400 hover:text-radar-green transition-colors flex items-center gap-1.5">
+                        <i data-lucide="clock" class="w-4 h-4"></i> History
+                    </a>
+                    <a href="#tips" class="text-gray-400 hover:text-radar-green transition-colors flex items-center gap-1.5">
+                        <i data-lucide="lightbulb" class="w-4 h-4"></i> Tips
+                    </a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="mobileMenuBtn" class="md:hidden text-gray-400 hover:text-radar-green transition-colors">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <button class="hidden sm:flex items-center gap-2 bg-radar-green/10 border border-radar-green/30 text-radar-green px-4 py-2 rounded-lg text-sm font-medium hover:bg-radar-green/20 transition-all btn-ripple">
+                        <i data-lucide="bookmark" class="w-4 h-4"></i> Saved
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/60" onclick="toggleMobileMenu()"></div>
+        <div class="absolute right-0 top-0 bottom-0 w-72 bg-radar-card border-l border-gray-800 p-6">
+            <div class="flex justify-end mb-8">
+                <button onclick="toggleMobileMenu()" class="text-gray-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="flex flex-col gap-4">
+                <a href="#scanner" onclick="toggleMobileMenu()" class="flex items-center gap-3 text-gray-300 hover:text-radar-green transition-colors p-3 rounded-lg hover:bg-white/5">
+                    <i data-lucide="scan" class="w-5 h-5"></i> Scanner
+                </a>
+                <a href="#dashboard" onclick="toggleMobileMenu()" class="flex items-center gap-3 text-gray-300 hover:text-radar-green transition-colors p-3 rounded-lg hover:bg-white/5">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+                </a>
+                <a href="#history" onclick="toggleMobileMenu()" class="flex items-center gap-3 text-gray-300 hover:text-radar-green transition-colors p-3 rounded-lg hover:bg-white/5">
+                    <i data-lucide="clock" class="w-5 h-5"></i> History
+                </a>
+                <a href="#tips" onclick="toggleMobileMenu()" class="flex items-center gap-3 text-gray-300 hover:text-radar-green transition-colors p-3 rounded-lg hover:bg-white/5">
+                    <i data-lucide="lightbulb" class="w-5 h-5"></i> Tips
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero / Scanner Section -->
+    <section id="scanner" class="relative pt-24 pb-16 min-h-screen flex flex-col items-center justify-center overflow-hidden">
+        <!-- Radar Background -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <canvas id="radarCanvas" width="600" height="600"></canvas>
+        </div>
+
+        <div class="relative z-10 max-w-4xl mx-auto px-4 text-center">
+            <div class="mb-6 fade-in-up" style="animation-delay: 0.1s">
+                <span class="inline-flex items-center gap-2 bg-radar-green/10 border border-radar-green/30 text-radar-green text-xs font-mono px-3 py-1.5 rounded-full">
+                    <span class="w-2 h-2 bg-radar-green rounded-full animate-pulse"></span>
+                    SYSTEM ONLINE — SCANNING ENABLED
+                </span>
+            </div>
+
+            <h1 class="text-4xl sm:text-5xl md:text-6xl font-black mb-4 leading-tight fade-in-up" style="animation-delay: 0.2s">
+                Detect <span class="text-radar-red glow-red">Misinformation</span><br>
+                With <span class="text-radar-green glow-green">Radar</span> Precision
+            </h1>
+
+            <p class="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 fade-in-up" style="animation-delay: 0.3s">
+                Paste any news article, URL, or claim below and our AI-powered radar will analyze it for credibility, bias, and misinformation signals.
+            </p>
+
+            <!-- Input Area -->
+            <div class="max-w-2xl mx-auto fade-in-up" style="animation-delay: 0.4s">
+                <div class="relative">
+                    <!-- Tab Switch -->
+                    <div class="flex gap-1 mb-3 bg-gray-900/50 rounded-lg p-1 max-w-xs mx-auto">
+                        <button onclick="switchInputTab('text')" id="tabText" class="flex-1 text-xs font-medium py-2 px-3 rounded-md transition-all bg-radar-green/10 text-radar-green border border-radar-green/30">
+                            <i data-lucide="type" class="w-3.5 h-3.5 inline mr-1"></i> Text
+                        </button>
+                        <button onclick="switchInputTab('url')" id="tabUrl" class="flex-1 text-xs font-medium py-2 px-3 rounded-md transition-all text-gray-400 hover:text-gray-300">
+                            <i data-lucide="link" class="w-3.5 h-3.5 inline mr-1"></i> URL
+                        </button>
+                        <button onclick="switchInputTab('claim')" id="tabClaim" class="flex-1 text-xs font-medium py-2 px-3 rounded-md transition-all text-gray-400 hover:text-gray-300">
+                            <i data-lucide="message-square" class="w-3.5 h-3.5 inline mr-1"></i> Claim
+                        </button>
+                    </div>
+
+                    <div class="relative bg-gray-900/50 border border-gray-700/50 rounded-2xl p-4 focus-within:border-radar-green/50 transition-all">
+                        <!-- Text Input -->
+                        <div id="inputText" class="input-group">
+                            <textarea id="newsText" class="w-full bg-transparent border-none resize-none text-gray-200 placeholder-gray-500 focus:outline-none input-radar rounded-lg p-2 min-h-[120px]" placeholder="Paste the news article text here for analysis..."></textarea>
+                        </div>
+                        <!-- URL Input -->
+                        <div id="inputUrl" class="input-group hidden">
+                            <input type="url" id="newsUrl" class="w-full bg-transparent border-none text-gray-200 placeholder-gray-500 focus:outline-none input-radar rounded-lg p-2" placeholder="https://example.com/news-article">
+                        </div>
+                        <!-- Claim Input -->
+                        <div id="inputClaim" class="input-group hidden">
+                            <input type="text" id="newsClaim" class="w-full bg-transparent border-none text-gray-200 placeholder-gray-500 focus:outline-none input-radar rounded-lg p-2" placeholder="Enter a specific claim to fact-check...">
+                        </div>
+
+                        <div class="flex items-center justify-between mt-2">
+                            <div class="flex items-center gap-2">
+                                <button onclick="pasteFromClipboard()" class="flex items-center gap-1.5 text-gray-500 hover:text-gray-300 text-xs transition-colors px-2 py-1 rounded-md hover:bg-white/5">
+                                    <i data-lucide="clipboard" class="w-3.5 h-3.5"></i> Paste
+                                </button>
+                                <button onclick="clearInput()" class="flex items-center gap-1.5 text-gray-500 hover:text-gray-300 text-xs transition-colors px-2 py-1 rounded-md hover:bg-white/5">
+                                    <i data-lucide="eraser" class="w-3.5 h-3.5"></i> Clear
+                                </button>
+                            </div>
+                            <button onclick="analyzeContent()" id="analyzeBtn" class="flex items-center gap-2 bg-radar-green text-radar-dark font-semibold px-6 py-2.5 rounded-xl text-sm hover:bg-radar-green/90 transition-all btn-ripple shadow-lg shadow-radar-green/20">
+                                <i data-lucide="scan" class="w-4 h-4"></i> Analyze
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Examples -->
+                <div class="mt-4 flex flex-wrap justify-center gap-2">
+                    <span class="text-gray-500 text-xs">Try:</span>
+                    <button onclick="loadExample(0)" class="text-xs text-gray-400 hover:text-radar-green bg-gray-900/30 px-3 py-1 rounded-full border border-gray-700/30 hover:border-radar-green/30 transition-all">COVID vaccine microchips</button>
+                    <button onclick="loadExample(1)" class="text-xs text-gray-400 hover:text-radar-green bg-gray-900/30 px-3 py-1 rounded-full border border-gray-700/30 hover:border-radar-green/30 transition-all">Climate change is a hoax</button>
+                    <button onclick="loadExample(2)" class="text-xs text-gray-400 hover:text-radar-green bg-gray-900/30 px-3 py-1 rounded-full border border-gray-700/30 hover:border-radar-green/30 transition-all">Election fraud claims</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Analysis Result Modal -->
+    <div id="resultModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeResult()"></div>
+        <div class="modal-content absolute inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-3xl sm:max-h-[85vh] bg-radar-card border border-gray-700/50 rounded-2xl overflow-hidden flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-radar-green/10 flex items-center justify-center">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-radar-green"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg">Analysis Report</h3>
+                        <p class="text-xs text-gray-500 font-mono" id="reportTimestamp">--</p>
+                    </div>
+                </div>
+                <button onclick="closeResult()" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <!-- Modal Body -->
+            <div class="overflow-y-auto p-4 sm:p-6 flex-1" id="resultContent">
+                <!-- Filled dynamically -->
+            </div>
+            <!-- Modal Footer -->
+            <div class="p-4 sm:p-6 border-t border-gray-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <button onclick="saveReport()" class="flex items-center gap-1.5 text-sm text-gray-400 hover:text-radar-green transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5">
+                        <i data-lucide="bookmark" class="w-4 h-4"></i> Save
+                    </button>
+                    <button onclick="shareReport()" class="flex items-center gap-1.5 text-sm text-gray-400 hover:text-radar-blue transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5">
+                        <i data-lucide="share-2" class="w-4 h-4"></i> Share
+                    </button>
+                </div>
+                <button onclick="closeResult()" class="bg-gray-700 hover:bg-gray-600 text-white text-sm px-4 py-2 rounded-lg transition-colors">
+                    Close Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="py-16 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 rounded-xl bg-radar-blue/10 flex items-center justify-center">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 text-radar-blue"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold">Live Dashboard</h2>
+                    <p class="text-sm text-gray-500">Real-time misinformation tracking stats</p>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-radar-card border border-gray-800/50 rounded-2xl p-5 card-hover">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i data-lucide="scan-search" class="w-4 h-4 text-radar-green"></i>
+                        <span class="text-xs text-gray-500 uppercase tracking-wider">Scanned</span>
+                    </div>
+                    <div class="text-3xl font-bold font-mono text-white counter" data-target="12847">0</div>
+                    <div class="text-xs text-radar-green mt-1 flex items-center gap-1">
+                        <i data-lucide="trending-up" class="w-3 h-3"></i> +12.5% this week
+                    </div>
+                </div>
+                <div class="bg-radar-card border border-gray-800/50 rounded-2xl p-5 card-hover">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-radar-red"></i>
+                        <span class="text-xs text-gray-500 uppercase tracking-wider">Flagged</span>
+                    </div>
+                    <div class="text-3xl font-bold font-mono text-radar-red counter" data-target="3421">0</div>
+                    <div class="text-xs text-radar-red mt-1 flex items-center gap-1">
+                        <i data-lucide="trending-up" class="w-3 h-3"></i> +8.3% this week
+                    </div>
+                </div>
+                <div class="bg-radar-card border border-gray-800/50 rounded-2xl p-5 card-hover">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-radar-blue"></i>
+                        <span class="text-xs text-gray-500 uppercase tracking-wider">Verified</span>
+                    </div>
+                    <div class="text-3xl font-bold font-mono text-radar-blue counter" data-target="9426">0</div>
+                    <div class="text-xs text-radar-blue mt-1 flex items-center gap-1">
+                        <i data-lucide="trending-up" class="w-3 h-3"></i> +15.2% this week
+                    </div>
+                </div>
+                <div class="bg-radar-card border border-gray-800/50 rounded-2xl p-5 card-hover">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i data-lucide="users" class="w-4 h-4 text-radar-yellow"></i>
+                        <span class="text-xs text-gray-500 uppercase tracking-wider">Fact Checkers</span>
+                    </div>
+                    <div class="text-3xl font-bold font-mono text-radar-yellow counter" data-target="589">0</div>
+                    <div class="text-xs text-radar-yellow mt-1 flex items-center gap-1">
+                        <i data-lucide="trending-up" class="w-3 h-3"></i> +5.7% this week
+                    </div>
+                </div>
+            </div>
+
+            <!-- Radar Chart + Recent Analysis -->
+            <div class="grid md:grid-cols-5 gap-4 mb-8">
+                <!-- Credibility Radar Chart -->
+                <div class="md:col-span-2 bg-radar-card border border-gray-800/50 rounded-2xl p-5">
+                    <h3 class="text-sm font-semibold mb-4 flex items-center gap-2">
+                        <i data-lucide="target" class="w-4 h-4 text-radar-green"></i> Credibility Radar
+                    </h3>
+                    <canvas id="credibilityRadar" width="300" height="300"></canvas>
+                    <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+                        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-radar-green"></span> Source Trust</div>
+                        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-radar-blue"></span> Evidence</div>
+                        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-radar-yellow"></span> Consistency</div>
+                        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-radar-orange"></span> Transparency</div>
+                    </div>
+                </div>
+
+                <!-- Recent Analysis -->
+                <div class="md:col-span-3 bg-radar-card border border-gray-800/50 rounded-2xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-semibold flex items-center gap-2">
+                            <i data-lucide="activity" class="w-4 h-4 text-radar-blue"></i> Recent Analyses
+                        </h3>
+                        <span class="text-xs text-gray-500">Live</span>
+                    </div>
+                    <div class="space-y-3" id="recentAnalyses">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trending Misinformation Topics -->
+            <div class="bg-radar-card border border-gray-800/50 rounded-2xl p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold flex items-center gap-2">
+                        <i data-lucide="flame" class="w-4 h-4 text-radar-orange"></i> Trending Misinformation Topics
+                    </h3>
+                    <button class="text-xs text-gray-500 hover:text-radar-green transition-colors">View All</button>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3" id="trendingTopics">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- History Section -->
+    <section id="history" class="py-16 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-radar-yellow/10 flex items-center justify-center">
+                        <i data-lucide="clock" class="w-5 h-5 text-radar-yellow"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold">Scan History</h2>
+                        <p class="text-sm text-gray-500">Your previous analyses</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="historyFilter" onchange="filterHistory()" class="bg-gray-900/50 border border-gray-700/50 rounded-lg text-sm text-gray-300 px-3 py-2 focus:outline-none focus:border-radar-green/50">
+                        <option value="all">All Results</option>
+                        <option value="credible">Credible</option>
+                        <option value="suspicious">Suspicious</option>
+                        <option value="misleading">Misleading</option>
+                        <option value="fake">Fake</option>
+                    </select>
+                    <button onclick="clearHistory()" class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-radar-red transition-colors px-3 py-2 rounded-lg hover:bg-radar-red/5">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i> Clear
+                    </button>
+                </div>
+            </div>
+
+            <div id="historyList" class="space-y-3">
+                <!-- Filled by JS -->
+            </div>
+
+            <div id="historyEmpty" class="text-center py-16">
+                <i data-lucide="inbox" class="w-16 h-16 text-gray-700 mx-auto mb-4"></i>
+                <h3 class="text-gray-500 text-lg mb-2">No scans yet</h3>
+                <p class="text-gray-600 text-sm">Start by analyzing a news article or claim above</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tips Section -->
+    <section id="tips" class="py-16 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 rounded-xl bg-radar-orange/10 flex items-center justify-center">
+                    <i data-lucide="lightbulb" class="w-5 h-5 text-radar-orange"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold">Spot Fake News Tips</h2>
+                    <p class="text-sm text-gray-500">Expert advice for identifying misinformation</p>
+                </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" id="tipsGrid">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 border-t border-gray-800/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="radar" class="w-5 h-5 text-radar-green"></i>
+                    <span class="font-bold text-sm">Fake News Radar</span>
+                    <span class="text-gray-600 text-xs">© 2024</span>
+                </div>
+                <p class="text-gray-600 text-xs text-center">AI-powered misinformation detection. Always verify with multiple sources.</p>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="text-gray-500 hover:text-radar-green transition-colors"><i data-lucide="github" class="w-5 h-5"></i></a>
+                    <a href="#" class="text-gray-500 hover:text-radar-blue transition-colors"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+                    <a href="#" class="text-gray-500 hover:text-radar-red transition-colors"><i data-lucide="heart" class="w-5 h-5"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transition-all duration-300 transform translate-y-4 opacity-0 pointer-events-none">
+        <div class="flex items-center gap-3 bg-radar-card border border-gray-700/50 rounded-xl px-5 py-3 shadow-2xl shadow-black/50">
+            <i data-lucide="check-circle" class="w-5 h-5 text-radar-green" id="toastIcon"></i>
+            <span class="text-sm text-gray-200" id="toastMessage">Action completed</span>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center">
+        <div class="text-center">
+            <div class="w-20 h-20 relative mx-auto mb-6">
+                <div class="absolute inset-0 border-4 border-radar-green/20 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-transparent border-t-radar-green rounded-full animate-spin"></div>
+            </div>
+            <h3 class="text-lg font-semibold mb-2" id="loadingText">Analyzing Content...</h3>
+            <p class="text-gray-500 text-sm" id="loadingSubtext">Running through credibilitychecks</p>
+            <div class="mt-4 w-64 mx-auto bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-radar-green h-full rounded-full transition-all duration-300" id="loadingBar" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
