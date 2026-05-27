@@ -249,6 +249,37 @@ function initCredibilityChart(customValues = null) {
     animateChart();
 }
 
+// ============ STATS COUNTER ANIMATION ============
+function initCounters() {
+    const counters = document.querySelectorAll('.counter');
+    counters.forEach(counter => {
+        const target = +counter.getAttribute('data-target');
+        if (!target) return;
+        
+        const duration = 1500; // 1.5s animation duration
+        const startTime = performance.now();
+        
+        const update = (now) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Ease out quad function for premium feel
+            const easeProgress = progress * (2 - progress);
+            const current = Math.floor(easeProgress * target);
+            
+            counter.textContent = current.toLocaleString();
+            
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            } else {
+                counter.textContent = target.toLocaleString();
+            }
+        };
+        
+        requestAnimationFrame(now => update(now));
+    });
+}
+
 // ============ UI POPULATORS ============
 function populateRecentAnalyses() {
     const container = document.getElementById('recentAnalyses');
@@ -505,7 +536,7 @@ function displayReport(data, originalText) {
     if (timestamp) timestamp.textContent = `COMPLETED: ${time}`;
 
     const score = data.prediction === 'REAL' ? data.real_score : (100 - data.fake_score);
-    const credibilityPct = score;
+    const credibilityPct = parseFloat(score.toFixed(1));
     
     let verdictClass = 'tag-credible';
     let verdictLabel = 'Credible';
@@ -707,10 +738,10 @@ window.reopenReport = function(timestamp) {
 
     const mockApiResponse = {
         prediction: item.score >= 70 ? "REAL" : "FAKE",
-        confidence: item.score >= 50 ? item.score : 100 - item.score,
+        confidence: parseFloat((item.score >= 50 ? item.score : 100 - item.score).toFixed(1)),
         verdict: item.score >= 70 ? "High confidence" : item.score >= 40 ? "Moderate confidence" : "Low confidence — review manually",
         real_score: item.score,
-        fake_score: 100 - item.score,
+        fake_score: parseFloat((100 - item.score).toFixed(1)),
         credibility_signals: {
             positive_markers: item.score >= 70 ? Math.round(item.score / 15) : 1,
             negative_markers: item.score < 70 ? Math.round((100 - item.score) / 12) : 0
@@ -793,6 +824,7 @@ if (mobileMenuBtn) {
 document.addEventListener('DOMContentLoaded', () => {
     initRadar();
     initCredibilityChart();
+    initCounters();
     populateRecentAnalyses();
     populateTrendingTopics();
     populateTips();
