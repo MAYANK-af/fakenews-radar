@@ -330,35 +330,40 @@ def classify_text(text):
                 "You are a factual verification assistant. Verify if the following statement or question is factually correct. "
                 "If it is a question, evaluate the factuality of the premise (e.g. 'Is Akhilesh Yadav the CM of UP?' has a false premise because Yogi Adityanath is the current CM). "
                 f"Text to verify: '{text}'\n\n"
-                "Respond ONLY with a valid, clean JSON object, without markdown formatting or code blocks, containing exactly these keys:\n"
+                "Respond with a valid, clean JSON object, containing exactly these keys:\n"
                 "{\n"
                 "  \"is_factual\": true or false,\n"
                 "  \"explanation\": \"A concise 2-sentence explanation of the true facts, naming the correct entities if the input is false.\"\n"
                 "}"
             )
             payload = {
-                "contents": [{"parts": [{"text": prompt}]}]
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "responseMimeType": "application/json"
+                }
             }
             res = requests.post(url, headers=headers, json=payload, timeout=6)
             if res.status_code == 200:
                 resp_data = res.json()
                 resp_text = resp_data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                # Clean code blocks
-                if resp_text.startswith("```"):
-                    resp_text = re.sub(r"^```(?:json)?\n", "", resp_text)
-                    resp_text = re.sub(r"\n```$", "", resp_text)
                 
-                result_json = json.loads(resp_text)
-                if result_json.get("is_factual") is False:
-                    is_misinfo_match = True
-                    # Append Gemini disproof as a fact check result!
-                    fact_checks.append({
-                        "claim": text,
-                        "claimant": "User Query / News Headline",
-                        "publisher": "Google Gemini LLM Validator",
-                        "rating": "False / Factually Inconsistent",
-                        "url": "https://en.wikipedia.org/wiki/Special:Search?search=" + quote(text)
-                    })
+                # Extremely robust JSON extraction
+                match = re.search(r"\{.*\}", resp_text, re.DOTALL)
+                if match:
+                    json_str = match.group(0)
+                    result_json = json.loads(json_str)
+                    
+                    if result_json.get("is_factual") is False:
+                        is_misinfo_match = True
+                        explanation = result_json.get("explanation", "Factual inconsistency matched by AI verification.")
+                        # Append Gemini disproof as a fact check result!
+                        fact_checks.append({
+                            "claim": f"LLM Fact-Check Disproof: {explanation}",
+                            "claimant": "User Query / News Headline",
+                            "publisher": "Google Gemini LLM Validator",
+                            "rating": "False",
+                            "url": "https://en.wikipedia.org/wiki/Special:Search?search=" + quote(text)
+                        })
         except Exception as e:
             print(f"Gemini API verification failed: {e}")
 
