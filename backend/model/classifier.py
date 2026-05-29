@@ -337,10 +337,7 @@ def classify_text(text):
                 "}"
             )
             payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generation_config": {
-                    "response_mime_type": "application/json"
-                }
+                "contents": [{"parts": [{"text": prompt}]}]
             }
             res = requests.post(url, headers=headers, json=payload, timeout=6)
             print(f"[DIAGNOSTIC] Gemini API responded with status code: {res.status_code}")
