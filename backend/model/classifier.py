@@ -338,8 +338,8 @@ def classify_text(text):
             )
             payload = {
                 "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "responseMimeType": "application/json"
+                "generation_config": {
+                    "response_mime_type": "application/json"
                 }
             }
             res = requests.post(url, headers=headers, json=payload, timeout=6)
