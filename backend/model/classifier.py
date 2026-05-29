@@ -321,7 +321,7 @@ def classify_text(text):
     gemini_key = os.environ.get("GEMINI_API_KEY")
     if not is_misinfo_match and gemini_key and len(text.strip()) > 5:
         try:
-            url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+            url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
             headers = {
                 "Content-Type": "application/json",
                 "x-goog-api-key": gemini_key
