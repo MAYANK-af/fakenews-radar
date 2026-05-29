@@ -343,9 +343,11 @@ def classify_text(text):
                 }
             }
             res = requests.post(url, headers=headers, json=payload, timeout=6)
+            print(f"[DIAGNOSTIC] Gemini API responded with status code: {res.status_code}")
             if res.status_code == 200:
                 resp_data = res.json()
                 resp_text = resp_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                print(f"[DIAGNOSTIC] Gemini raw response text: {resp_text}")
                 
                 # Extremely robust JSON extraction
                 match = re.search(r"\{.*\}", resp_text, re.DOTALL)
@@ -353,7 +355,15 @@ def classify_text(text):
                     json_str = match.group(0)
                     result_json = json.loads(json_str)
                     
-                    if result_json.get("is_factual") is False:
+                    # Handle both boolean False and string "false"/"no" representations of false
+                    is_factual_val = result_json.get("is_factual")
+                    is_factual_bool = True
+                    if is_factual_val is False or str(is_factual_val).lower() in ["false", "no", "f", "0"]:
+                        is_factual_bool = False
+                        
+                    print(f"[DIAGNOSTIC] Parsed is_factual: {is_factual_bool}")
+                    
+                    if not is_factual_bool:
                         is_misinfo_match = True
                         explanation = result_json.get("explanation", "Factual inconsistency matched by AI verification.")
                         # Append Gemini disproof as a fact check result!
@@ -364,8 +374,10 @@ def classify_text(text):
                             "rating": "False",
                             "url": "https://en.wikipedia.org/wiki/Special:Search?search=" + quote(text)
                         })
+            else:
+                print(f"[DIAGNOSTIC] Gemini API Error Response: {res.text}")
         except Exception as e:
-            print(f"Gemini API verification failed: {e}")
+            print(f"[DIAGNOSTIC] Gemini API verification exception failed: {e}")
 
     # If it's a verified misinformation match, override the classification!
     if is_misinfo_match:
