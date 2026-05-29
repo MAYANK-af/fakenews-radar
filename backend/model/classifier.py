@@ -334,7 +334,20 @@ def classify_text(text):
             payload = {
                 "contents": [{"parts": [{"text": prompt}]}]
             }
-            
+            # ListModels diagnostic to check which models are available
+            try:
+                print("[DIAGNOSTIC] Querying ListModels to check available models...")
+                list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_key}"
+                list_res = requests.get(list_url, timeout=5)
+                if list_res.status_code == 200:
+                    models_data = list_res.json()
+                    model_names = [m.get("name", "") for m in models_data.get("models", [])]
+                    print(f"[DIAGNOSTIC] Available models in this project: {model_names}")
+                else:
+                    print(f"[DIAGNOSTIC] ListModels failed with status {list_res.status_code}: {list_res.text}")
+            except Exception as ex:
+                print(f"[DIAGNOSTIC] ListModels failed: {ex}")
+
             models_to_try = [
                 ("v1", "gemini-1.5-flash"),
                 ("v1beta", "gemini-1.5-flash"),
