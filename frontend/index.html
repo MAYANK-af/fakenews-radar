@@ -275,6 +275,9 @@
                     <a href="#tips" class="text-gray-400 hover:text-radar-green transition-colors flex items-center gap-1.5">
                         <i data-lucide="lightbulb" class="w-4 h-4"></i> Tips
                     </a>
+                    <a href="#extension" class="text-gray-400 hover:text-radar-green transition-colors flex items-center gap-1.5">
+                        <i data-lucide="chrome" class="w-4 h-4"></i> Extension
+                    </a>
                 </div>
                 <div class="flex items-center gap-3">
                     <button id="mobileMenuBtn" class="md:hidden text-gray-400 hover:text-radar-green transition-colors">
@@ -320,6 +323,9 @@
                 </a>
                 <a href="#tips" onclick="toggleMobileMenu()" class="flex items-center gap-3 text-gray-300 hover:text-radar-green transition-colors p-3 rounded-lg hover:bg-white/5">
                     <i data-lucide="lightbulb" class="w-5 h-5"></i> Tips
+                </a>
+                <a href="#extension" onclick="toggleMobileMenu()" class="flex items-center gap-3 text-gray-300 hover:text-radar-green transition-colors p-3 rounded-lg hover:bg-white/5">
+                    <i data-lucide="chrome" class="w-5 h-5"></i> Extension
                 </a>
                 
                 <div class="border-t border-gray-800/80 my-4 pt-4">
@@ -690,6 +696,84 @@
 
             <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" id="tipsGrid">
                 <!-- Filled by JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Extension Section -->
+    <section id="extension" class="py-16 relative border-t border-gray-800/30">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-3 mb-10 justify-center text-center flex-col sm:flex-row">
+                <div class="w-12 h-12 rounded-2xl bg-radar-blue/10 flex items-center justify-center border border-radar-blue/20">
+                    <i data-lucide="chrome" class="w-6 h-6 text-radar-blue animate-pulse"></i>
+                </div>
+                <div>
+                    <h2 class="text-3xl font-black">Browser Extension Companion</h2>
+                    <p class="text-sm text-gray-500 mt-1">Scan credibility instantly from any page via your right-click context menu</p>
+                </div>
+            </div>
+
+            <!-- Main Layout Grid -->
+            <div class="grid md:grid-cols-12 gap-8 items-center">
+                <!-- Left Column: Installation Steps -->
+                <div class="md:col-span-7 space-y-6 text-left">
+                    <h3 class="text-lg font-bold text-gray-200 border-b border-gray-800/80 pb-2">Easy 3-Step Setup</h3>
+                    
+                    <!-- Step 1 -->
+                    <div class="flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-full bg-radar-blue/10 border border-radar-blue/30 flex items-center justify-center text-radar-blue font-bold text-sm shrink-0">1</div>
+                        <div>
+                            <h4 class="font-bold text-gray-200 text-sm mb-1">Download & Extract</h4>
+                            <p class="text-xs text-gray-400 leading-relaxed">Click the download button to grab the dynamic extension ZIP file and extract it to a folder on your system.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-full bg-radar-green/10 border border-radar-green/30 flex items-center justify-center text-radar-green font-bold text-sm shrink-0">2</div>
+                        <div>
+                            <h4 class="font-bold text-gray-200 text-sm mb-1">Open Extensions Manager</h4>
+                            <p class="text-xs text-gray-400 leading-relaxed">Open a new browser tab, go to <code class="text-radar-green bg-gray-950 px-1.5 py-0.5 rounded border border-gray-800 font-mono text-[11px]">chrome://extensions</code>, and turn on the <strong>"Developer Mode"</strong> toggle in the top-right.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-full bg-radar-yellow/10 border border-radar-yellow/30 flex items-center justify-center text-radar-yellow font-bold text-sm shrink-0">3</div>
+                        <div>
+                            <h4 class="font-bold text-gray-200 text-sm mb-1">Load Unpacked Folder</h4>
+                            <p class="text-xs text-gray-400 leading-relaxed">Click the <strong>"Load unpacked"</strong> button in the top-left, and select the extracted folder. The companion is now active!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Interactive Download Card -->
+                <div class="md:col-span-5 flex justify-center">
+                    <div class="w-full max-w-sm rounded-2xl bg-gray-900 border border-gray-800 p-6 flex flex-col items-center text-center shadow-2xl relative overflow-hidden group">
+                        <!-- Decorative background glow -->
+                        <div class="absolute -top-12 -right-12 w-24 h-24 bg-radar-blue/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                        
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-radar-blue to-radar-green flex items-center justify-center mb-6 border border-radar-green/20 box-glow-green">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#060913" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="m16.2 7.8-8.4 8.4"></path>
+                                <circle cx="12" cy="12" r="6"></circle>
+                                <circle cx="12" cy="12" r="2"></circle>
+                            </svg>
+                        </div>
+                        
+                        <h4 class="font-black text-lg text-white mb-2">Fake News Radar</h4>
+                        <p class="text-xs text-gray-400 mb-6 px-4">Download the companion extension zip file and scan credibility in real-time.</p>
+                        
+                        <!-- Using clean relative endpoint mapping -->
+                        <a id="btnDownloadExt" href="#" class="w-full py-3.5 bg-gradient-to-r from-radar-blue to-radar-green hover:brightness-110 active:scale-[0.98] text-gray-900 font-bold text-xs rounded-xl transition-all shadow-lg shadow-radar-blue/10 flex items-center justify-center gap-2 select-none decoration-none">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            Download Extension ZIP
+                        </a>
+                        
+                        <span class="text-[9px] uppercase tracking-widest text-gray-500 font-semibold mt-4">Version 1.0.0 (MV3 compliant)</span>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

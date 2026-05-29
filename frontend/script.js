@@ -1153,4 +1153,11 @@ document.addEventListener('DOMContentLoaded', () => {
     populateTrendingTopics();
     populateTips();
     initFirebaseCloud();
+
+    // Map extension ZIP download endpoint dynamically
+    const downloadBtn = document.getElementById('btnDownloadExt');
+    if (downloadBtn) {
+        const apiHost = window.location.port === '3001' ? 'http://127.0.0.1:8080' : '';
+        downloadBtn.href = `${apiHost}/download-extension`;
+    }
 });
