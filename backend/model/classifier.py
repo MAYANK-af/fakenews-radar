@@ -321,11 +321,6 @@ def classify_text(text):
     gemini_key = os.environ.get("GEMINI_API_KEY")
     if not is_misinfo_match and gemini_key and len(text.strip()) > 5:
         try:
-            url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
-            headers = {
-                "Content-Type": "application/json",
-                "x-goog-api-key": gemini_key
-            }
             prompt = (
                 "You are a factual verification assistant. Verify if the following statement or question is factually correct. "
                 "If it is a question, evaluate the factuality of the premise (e.g. 'Is Akhilesh Yadav the CM of UP?' has a false premise because Yogi Adityanath is the current CM). "
@@ -339,9 +334,36 @@ def classify_text(text):
             payload = {
                 "contents": [{"parts": [{"text": prompt}]}]
             }
-            res = requests.post(url, headers=headers, json=payload, timeout=6)
-            print(f"[DIAGNOSTIC] Gemini API responded with status code: {res.status_code}")
-            if res.status_code == 200:
+            
+            models_to_try = [
+                ("v1", "gemini-1.5-flash"),
+                ("v1beta", "gemini-1.5-flash"),
+                ("v1", "gemini-1.5-pro"),
+                ("v1beta", "gemini-1.5-pro"),
+                ("v1beta", "gemini-pro"),
+            ]
+            
+            res = None
+            last_error = ""
+            for version, model in models_to_try:
+                try:
+                    url = f"https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent"
+                    headers = {
+                        "Content-Type": "application/json",
+                        "x-goog-api-key": gemini_key
+                    }
+                    print(f"[DIAGNOSTIC] Trying Gemini API endpoint: {version}/{model}")
+                    res = requests.post(url, headers=headers, json=payload, timeout=6)
+                    print(f"[DIAGNOSTIC] Gemini API responded with status code: {res.status_code}")
+                    if res.status_code == 200:
+                        break
+                    else:
+                        last_error = res.text
+                except Exception as ex:
+                    last_error = str(ex)
+                    print(f"[DIAGNOSTIC] Gemini endpoint {version}/{model} failed: {ex}")
+            
+            if res and res.status_code == 200:
                 resp_data = res.json()
                 resp_text = resp_data["candidates"][0]["content"]["parts"][0]["text"].strip()
                 print(f"[DIAGNOSTIC] Gemini raw response text: {resp_text}")
@@ -372,7 +394,7 @@ def classify_text(text):
                             "url": "https://en.wikipedia.org/wiki/Special:Search?search=" + quote(text)
                         })
             else:
-                print(f"[DIAGNOSTIC] Gemini API Error Response: {res.text}")
+                print(f"[DIAGNOSTIC] All Gemini API endpoints failed or returned errors. Last error: {last_error}")
         except Exception as e:
             print(f"[DIAGNOSTIC] Gemini API verification exception failed: {e}")
 
