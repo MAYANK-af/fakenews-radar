@@ -349,11 +349,16 @@ def classify_text(text):
                 print(f"[DIAGNOSTIC] ListModels failed: {ex}")
 
             models_to_try = [
-                ("v1", "gemini-1.5-flash"),
-                ("v1beta", "gemini-1.5-flash"),
-                ("v1", "gemini-1.5-pro"),
-                ("v1beta", "gemini-1.5-pro"),
-                ("v1beta", "gemini-pro"),
+                ("v1", "gemini-2.5-flash"),
+                ("v1beta", "gemini-2.5-flash"),
+                ("v1", "gemini-2.0-flash"),
+                ("v1beta", "gemini-2.0-flash"),
+                ("v1beta", "gemini-flash-latest"),
+                ("v1beta", "gemini-pro-latest"),
+                ("v1", "gemini-3.5-flash"),
+                ("v1beta", "gemini-3.5-flash"),
+                ("v1", "gemini-2.5-pro"),
+                ("v1beta", "gemini-2.5-pro"),
             ]
             
             res = None
