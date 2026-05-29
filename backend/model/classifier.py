@@ -304,8 +304,8 @@ def classify_text(text):
         # Filter raw fact checks by similarity to the user's search query to avoid false matches
         for fc in raw_fact_checks:
             overlap, jaccard = compute_similarity(search_query, fc["claim"])
-            # Threshold: Overlap must be at least 50% and Jaccard at least 32%
-            if overlap >= 0.5 and jaccard >= 0.32:
+            # Threshold: Overlap must be at least 50% and Jaccard at least 35%
+            if overlap >= 0.5 and jaccard >= 0.35:
                 fact_checks.append(fc)
                 
         # Check if any fact checks contain a negative rating
