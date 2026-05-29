@@ -32,6 +32,9 @@ COPY --chown=user backend/model model/
 COPY --chown=user frontend/index.html static/index.html
 COPY --chown=user frontend/script.js static/script.js
 
+# Copy chrome-extension folder for zip download bundler
+COPY --chown=user chrome-extension chrome-extension/
+
 # Expose port 7860 for Hugging Face Spaces
 EXPOSE 7860
 
