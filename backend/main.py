@@ -24,6 +24,14 @@ class ArticleRequest(BaseModel):
 def classify(req: ArticleRequest):
     if not req.text.strip():
         return {"error": "No text provided"}
+        
+    # Print clear diagnostic logs to the Hugging Face console to troubleshoot API Key loading
+    fact_check_key = os.environ.get("GOOGLE_FACT_CHECK_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY")
+    print(f"[DIAGNOSTIC] classify request received. Text length: {len(req.text)}")
+    print(f"[DIAGNOSTIC] GOOGLE_FACT_CHECK_API_KEY configured: {bool(fact_check_key)}")
+    print(f"[DIAGNOSTIC] GEMINI_API_KEY configured: {bool(gemini_key)}")
+    
     result = classify_text(req.text)
     return result
 
