@@ -122,6 +122,29 @@ function displayResults(data) {
     barCitations.style.width = `${citationVal}%`;
     barClickbait.style.width = `${clickbaitVal}%`;
   }, 100);
+
+  // Render Fact-Check Database Override Matches
+  const fcSection = document.getElementById('factCheckSection');
+  const fcList = document.getElementById('factCheckList');
+  if (fcSection && fcList) {
+    if (data.fact_checks && data.fact_checks.length > 0) {
+      fcList.innerHTML = data.fact_checks.map(fc => `
+        <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 8px; font-size: 11px;">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
+            <strong style="color: var(--text-main); font-weight: 700; line-clamp: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">“${fc.claim}”</strong>
+            <span style="background: rgba(255, 51, 102, 0.15); border: 1px solid rgba(255, 51, 102, 0.2); color: var(--radar-red); font-size: 8px; font-weight: 800; text-transform: uppercase; padding: 1px 4px; border-radius: 4px; flex-shrink: 0;">${fc.rating}</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; font-size: 9px; color: var(--text-muted); border-top: 1px solid rgba(255, 255, 255, 0.03); padding-top: 4px; margin-top: 4px;">
+            <span>By: <strong style="color: var(--radar-blue);">${fc.publisher}</strong></span>
+            <a href="${fc.url}" target="_blank" style="color: var(--radar-blue); text-decoration: none; font-weight: 700;">Read Review &rarr;</a>
+          </div>
+        </div>
+      `).join('');
+      fcSection.classList.remove('hidden');
+    } else {
+      fcSection.classList.add('hidden');
+    }
+  }
 }
 
 // Local storage helper using chrome compatibility

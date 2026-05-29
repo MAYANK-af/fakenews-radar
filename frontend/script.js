@@ -917,6 +917,41 @@ function displayReport(data, originalText) {
             </div>
         </div>
 
+        <!-- Sleek Fact-Check Verification Override Matches -->
+        ${data.fact_checks && data.fact_checks.length > 0 ? `
+        <div class="bg-radar-card border border-red-500/20 rounded-xl p-5 mb-6 shadow-lg shadow-red-500/5 relative overflow-hidden backdrop-blur-md">
+            <div class="absolute -right-16 -top-16 w-36 h-36 bg-red-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="flex items-center gap-2.5 text-radar-red mb-4 border-b border-gray-800/80 pb-3">
+                <div class="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center border border-red-500/25">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-radar-red"></i>
+                </div>
+                <div>
+                    <h5 class="text-xs font-bold uppercase tracking-wider text-gray-200">Verified Misinformation Matches</h5>
+                    <p class="text-[9px] text-gray-500 font-semibold uppercase tracking-wider mt-0.5">Database Overridden Verdict</p>
+                </div>
+            </div>
+            <div class="space-y-4">
+                ${data.fact_checks.map(fc => `
+                <div class="bg-gray-950/40 border border-gray-800 rounded-lg p-3.5 hover:border-gray-700/50 transition-all duration-300">
+                    <div class="flex items-start justify-between gap-3 mb-2">
+                        <span class="text-xs text-gray-300 font-bold leading-relaxed line-clamp-2">“${fc.claim}”</span>
+                        <span class="bg-red-500/15 border border-red-500/20 text-radar-red text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md shrink-0">${fc.rating}</span>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-t border-gray-900 pt-2 text-[10px] text-gray-500">
+                        <div class="flex items-center gap-1.5 font-medium">
+                            <i data-lucide="globe" class="w-3.5 h-3.5 text-gray-600"></i>
+                            <span>Reviewed by: <strong class="text-gray-400 font-semibold">${fc.publisher}</strong></span>
+                        </div>
+                        <a href="${fc.url}" target="_blank" class="flex items-center gap-1 text-radar-blue hover:underline font-bold transition-all shrink-0">
+                            Read Full Review <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
+                        </a>
+                    </div>
+                </div>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+
         <div class="bg-gray-900/40 border border-gray-800 rounded-xl p-4">
             <h5 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Processed Text Preview</h5>
             <p class="text-xs text-gray-400 font-mono line-clamp-2 leading-relaxed bg-black/20 p-2.5 rounded-lg border border-gray-900">${originalText}</p>
