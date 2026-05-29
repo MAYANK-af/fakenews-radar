@@ -117,6 +117,47 @@ def extract_search_query(text):
         return " ".join(words[:15])
     return first_part
 
+def compute_similarity(q1, q2):
+    stopwords = {
+        "the", "and", "for", "with", "that", "this", "from", "was", "were", "are", 
+        "been", "have", "has", "had", "will", "would", "should", "their", "they", 
+        "who", "whom", "what", "which", "where", "when", "how", "why", "whose", 
+        "these", "those", "each", "every", "both", "all", "any", "some", "such", 
+        "than", "thus", "then", "into", "onto", "upon", "about", "above", "below", 
+        "under", "over", "again", "further", "once", "here", "there", "few", 
+        "more", "most", "other", "some", "same", "so", "too", "very", "can", "will", 
+        "just", "should", "now", "after", "before", "while", "during", "out", "over"
+    }
+    
+    words1 = set(w for w in re.findall(r"\b\w{2,}\b", q1.lower()) if w not in stopwords)
+    words2 = set(w for w in re.findall(r"\b\w{2,}\b", q2.lower()) if w not in stopwords)
+    
+    if not words1 or not words2:
+        return 0.0, 0.0
+        
+    intersection = 0
+    matched1 = set()
+    matched2 = set()
+    
+    for w1 in words1:
+        if w1 in words2:
+            intersection += 1.0
+            matched1.add(w1)
+            matched2.add(w1)
+        else:
+            for w2 in words2:
+                if w2 not in matched2 and (w1 in w2 or w2 in w1):
+                    intersection += 0.8
+                    matched1.add(w1)
+                    matched2.add(w2)
+                    break
+                    
+    overlap_ratio = intersection / len(words1)
+    union_len = len(words1) + len(words2) - intersection
+    jaccard = intersection / union_len if union_len > 0 else 0.0
+    
+    return overlap_ratio, jaccard
+
 def search_fact_checks(query):
     if not query or len(query.strip()) < 5:
         return []
@@ -259,7 +300,14 @@ def classify_text(text):
     is_misinfo_match = False
     
     if len(search_query) > 5:
-        fact_checks = search_fact_checks(search_query)
+        raw_fact_checks = search_fact_checks(search_query)
+        # Filter raw fact checks by similarity to the user's search query to avoid false matches
+        for fc in raw_fact_checks:
+            overlap, jaccard = compute_similarity(search_query, fc["claim"])
+            # Threshold: Overlap must be at least 50% and Jaccard at least 32%
+            if overlap >= 0.5 and jaccard >= 0.32:
+                fact_checks.append(fc)
+                
         # Check if any fact checks contain a negative rating
         negative_ratings = ["false", "mostly false", "fake", "misleading", "debunked", "incorrect", "untrue", "half true"]
         for fc in fact_checks:
