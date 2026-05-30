@@ -1,3 +1,13 @@
+---
+title: Fake News Radar
+emoji: 📡
+colorFrom: green
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 📡 FakeNews Radar — Real-Time Misinformation Detection Hub
 
 [![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-green.svg)](https://huggingface.co/spaces/itachii9090/fake-news-radar)
