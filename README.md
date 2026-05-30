@@ -20,7 +20,7 @@ pinned: false
 An advanced, production-grade hybrid misinformation detection platform combining zero-shot natural language processing, real-time global fact-checking registry search, generative AI cross-referencing, and a Manifest V3 Chrome Extension.
 
 > [!IMPORTANT]
-> **Live Production Demo**: Try the fully deployed application live on **[Hugging Face Spaces](https://huggingface.co/spaces/itachii9090/fake-news-radar)**!
+> **Live Production Demo**: Try the fully deployed application live on **https://huggingface.co/spaces/itachii9090/fake-news-radar**!
 
 ---
 
