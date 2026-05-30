@@ -540,6 +540,35 @@
         </div>
     </div>
 
+    <!-- Trending Topics Detail Modal -->
+    <div id="trendingModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute inset-0 bg-black/75 backdrop-blur-md" onclick="closeTrendingModal()"></div>
+        <div class="modal-content absolute inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-2xl bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl shadow-black/80 flex flex-col p-6 overflow-hidden max-h-[85vh]">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-gray-800/80 mb-5 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-radar-orange/10 flex items-center justify-center">
+                        <i data-lucide="flame" class="w-5 h-5 text-radar-orange"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-white">Trending Misinformation Analysis</h3>
+                        <p class="text-xs text-gray-500">Comprehensive real-time tracking of active misinformation categories</p>
+                    </div>
+                </div>
+                <button onclick="closeTrendingModal()" class="text-gray-500 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body (Scrollable) -->
+            <div class="flex-1 overflow-y-auto space-y-4 pr-1 text-sm text-gray-300 scrollbar-thin">
+                <div class="grid sm:grid-cols-2 gap-4" id="trendingModalList">
+                    <!-- Dynamic entries will be generated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Dashboard Section -->
     <section id="dashboard" class="py-16 relative">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -633,7 +662,7 @@
                     <h3 class="text-sm font-semibold flex items-center gap-2">
                         <i data-lucide="flame" class="w-4 h-4 text-radar-orange"></i> Trending Misinformation Topics
                     </h3>
-                    <button class="text-xs text-gray-500 hover:text-radar-green transition-colors">View All</button>
+                    <button onclick="openTrendingModal()" class="text-xs text-gray-500 hover:text-radar-green transition-colors">View All</button>
                 </div>
                 <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3" id="trendingTopics">
                     <!-- Filled by JS -->

@@ -33,6 +33,63 @@ const trendingTopics = [
     { title: "Conspiracy Theories", count: 89, trend: "-3%", severity: "medium", icon: "eye" }
 ];
 
+const trendingDetails = [
+    {
+        title: "Health Misinformation",
+        count: 342,
+        trend: "+12%",
+        severity: "high",
+        icon: "heart-pulse",
+        description: "Viral claims regarding vaccines, miracle cures, and pharmaceutical industry conspiracies designed to bypass scientific consensus.",
+        claims: ["COVID vaccines contain microscopic tracking devices.", "Drinking high-alkaline water instantly cures viral infections."]
+    },
+    {
+        title: "Election Claims",
+        count: 287,
+        trend: "+8%",
+        severity: "critical",
+        icon: "vote",
+        description: "Coordinated fabrications targeting democratic processes, voter machine reliability, and forged candidate announcements.",
+        claims: ["Voting machines in key states were remotely hacked.", "Audit logs show thousands of deceased citizens cast ballots."]
+    },
+    {
+        title: "Climate Denial",
+        count: 195,
+        trend: "+5%",
+        severity: "medium",
+        icon: "cloud",
+        description: "Skeptical narratives alleging temperature data falsification and claiming renewable energy transitions are conspiracies.",
+        claims: ["Volcanic eruptions emit more CO2 than all human history.", "Meteorologists fake radar heat maps to exaggerate temperatures."]
+    },
+    {
+        title: "Financial Scams",
+        count: 156,
+        trend: "+22%",
+        severity: "high",
+        icon: "banknote",
+        description: "Deceptive schemes promising guaranteed crypto yields, artificial stock pumps, or imminent banking sector collapses.",
+        claims: ["Major banks are secretly preparing for a national cash freeze.", "New government-backed crypto will multiply savings tenfold overnight."]
+    },
+    {
+        title: "AI-Generated Fakes",
+        count: 134,
+        trend: "+45%",
+        severity: "critical",
+        icon: "bot",
+        description: "High-fidelity audio clones of political figures, synthetic imagery, and doctored documents intended to cause reputational damage.",
+        claims: ["Leaked audio shows president confessing to election tampering.", "Photorealistic images of a city skyline on fire go viral."]
+    },
+    {
+        title: "Conspiracy Theories",
+        count: 89,
+        trend: "-3%",
+        severity: "medium",
+        icon: "eye",
+        description: "Extravagant narratives surrounding government cover-ups, planetary discoveries, and technology-related biological risks.",
+        claims: ["Leaked blueprints prove NASA found an ancient structure on the Moon.", "5G cell towers emit frequencies that alter human DNA structures."]
+    }
+];
+
 // ============ RECENT ANALYSES DATA ============
 const recentAnalyses = [
     { title: "AI-generated deepfake video of election candidate goes viral", score: 14, verdict: "fake", time: "2 min ago" },
@@ -496,8 +553,13 @@ function populateRecentAnalyses() {
         const verdictClass = a.verdict === 'credible' ? 'tag-credible' : a.verdict === 'suspicious' ? 'tag-suspicious' : a.verdict === 'misleading' ? 'tag-misleading' : 'tag-fake';
         const verdictLabel = a.verdict.charAt(0).toUpperCase() + a.verdict.slice(1);
         const scoreColor = a.score >= 70 ? 'text-radar-green' : a.score >= 40 ? 'text-radar-yellow' : 'text-radar-red';
+        
+        // Escape titles and quotes properly for safe JS function arguments
+        const escTitle = a.title.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        const urlArg = a.url ? `'${a.url}'` : 'null';
+        
         return `
-            <div class="flex items-center justify-between p-3 rounded-xl bg-gray-900/30 hover:bg-gray-900/50 transition-colors cursor-pointer" onclick="loadRecentReport('${a.title.replace(/'/g, "\\'")}', ${a.score}, '${a.verdict}')">
+            <div class="flex items-center justify-between p-3 rounded-xl bg-gray-900/30 hover:bg-gray-900/50 transition-colors cursor-pointer" onclick="loadRecentReport('${escTitle}', ${a.score}, '${a.verdict}', ${urlArg})">
                 <div class="flex-1 min-w-0 mr-3">
                     <p class="text-sm text-gray-200 truncate">${a.title}</p>
                     <p class="text-xs text-gray-500">${a.time}</p>
@@ -1140,7 +1202,14 @@ window.shareReport = function() {
     showToast("Link copied to clipboard!", "info");
 }
 
-window.loadRecentReport = function(title, score, verdict) {
+window.loadRecentReport = function(title, score, verdict, url = null) {
+    if (url) {
+        // Open the original fact check article in a new tab!
+        window.open(url, '_blank');
+        showToast("Opening original fact check details...", "info");
+        return;
+    }
+    
     const mockItem = {
         title,
         text: `Recent analyzed article headline: "${title}". Real-time cross check completed.`,
@@ -1159,6 +1228,80 @@ window.loadTrendingTopic = function(title) {
     if (input) {
         input.value = `Is there any evidence concerning ${title.toLowerCase()} trending reports?`;
         showToast(`Trending topic loaded`, "info");
+    }
+}
+
+window.openTrendingModal = function() {
+    const modal = document.getElementById('trendingModal');
+    if (!modal) return;
+    
+    const modalList = document.getElementById('trendingModalList');
+    if (modalList) {
+        modalList.innerHTML = trendingDetails.map(t => {
+            const severityColors = {
+                critical: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400' },
+                high: { bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-400' },
+                medium: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-400' }
+            };
+            const col = severityColors[t.severity] || severityColors.medium;
+            
+            const claimsHtml = t.claims.map(c => `
+                <li class="flex items-start gap-1.5 text-xs text-gray-400 italic">
+                    <span class="text-radar-orange font-bold font-mono">▸</span>
+                    <span>"${c}"</span>
+                </li>
+            `).join('');
+
+            return `
+                <div class="bg-radar-card/30 border border-gray-800 rounded-xl p-4 flex flex-col gap-2 hover:border-gray-700 transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-radar-orange/10 flex items-center justify-center">
+                                <i data-lucide="${t.icon}" class="w-4 h-4 text-radar-orange"></i>
+                            </div>
+                            <span class="font-bold text-sm text-white">${t.title}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded border ${col.bg} ${col.border} ${col.text}">${t.severity}</span>
+                            <span class="text-xs text-radar-green font-mono">${t.trend}</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1 leading-relaxed">${t.description}</p>
+                    <div class="mt-2 pt-2 border-t border-gray-800/80">
+                        <span class="text-[10px] font-semibold tracking-wider text-gray-500 uppercase block mb-1.5">Active Claims in Circulation</span>
+                        <ul class="space-y-1.5">
+                            ${claimsHtml}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    modal.classList.remove('hidden');
+    lucide.createIcons();
+}
+
+window.closeTrendingModal = function() {
+    const modal = document.getElementById('trendingModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function fetchLiveTrendingClaims() {
+    try {
+        const apiHost = window.location.port === '3001' ? 'http://127.0.0.1:8080' : '';
+        const res = await fetch(`${apiHost}/trending-claims`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.length > 0) {
+                recentAnalyses.length = 0;
+                recentAnalyses.push(...data);
+                populateRecentAnalyses();
+                console.log("Loaded real-time trending news fact-checks successfully.");
+            }
+        }
+    } catch (e) {
+        console.warn("Could not fetch live trending news, falling back to cached seed data:", e);
     }
 }
 
@@ -1188,6 +1331,7 @@ document.addEventListener('DOMContentLoaded', () => {
     populateTrendingTopics();
     populateTips();
     initFirebaseCloud();
+    fetchLiveTrendingClaims();
 
     // Map extension ZIP download endpoint dynamically
     const downloadBtn = document.getElementById('btnDownloadExt');
