@@ -38,6 +38,8 @@ def classify(req: ArticleRequest):
 @app.get("/trending-claims")
 def trending_claims():
     feeds = [
+        "https://www.boomlive.in/feed/",
+        "https://factly.in/feed/",
         "https://www.politifact.com/rss/factchecks/",
         "https://www.factcheck.org/feed/"
     ]
@@ -87,7 +89,7 @@ def trending_claims():
                     elif "half true" in combined:
                         verdict = "suspicious"
                         score = 55
-                    elif "false" in combined or "fake" in combined or "pants on fire" in combined or "unsupported" in combined or "distort" in combined or "muddled" in combined:
+                    elif "false" in combined or "fake" in combined or "pants on fire" in combined or "unsupported" in combined or "distort" in combined or "muddled" in combined or "communal falsely" in combined or "misrepresented" in combined:
                         verdict = "fake"
                         score = 10
                     elif "true" in combined or "credible" in combined or "correct" in combined:
@@ -108,13 +110,19 @@ def trending_claims():
         except Exception as e:
             print(f"Error fetching trending feed {feed_url}: {e}")
             
-    # Alternate between PolitiFact and FactCheck.org dynamically
+    # Alternate between Indian and global fact-checks dynamically
     mixed = []
-    # Separate list items by publisher
-    pf_items = [r for r in results if "politifact" in r["url"].lower()]
-    fc_items = [r for r in results if "factcheck" in r["url"].lower()]
+    bl_items = [r for r in results if "boomlive.in" in r["url"].lower()]
+    fl_items = [r for r in results if "factly.in" in r["url"].lower()]
+    pf_items = [r for r in results if "politifact.com" in r["url"].lower()]
+    fc_items = [r for r in results if "factcheck.org" in r["url"].lower()]
     
-    for i in range(max(len(pf_items), len(fc_items))):
+    max_len = max(len(bl_items), len(fl_items), len(pf_items), len(fc_items))
+    for i in range(max_len):
+        if i < len(bl_items):
+            mixed.append(bl_items[i])
+        if i < len(fl_items):
+            mixed.append(fl_items[i])
         if i < len(pf_items):
             mixed.append(pf_items[i])
         if i < len(fc_items):
